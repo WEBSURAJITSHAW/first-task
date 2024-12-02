@@ -10,6 +10,12 @@
     android:padding="16dp">
 
     <!-- Main Data -->
+    <ImageView
+        android:id="@+id/profileImageView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="12dp"/>
     <TextView
         android:id="@+id/nameTextView"
         android:layout_width="wrap_content"
@@ -81,6 +87,7 @@
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
+        android:layout_marginTop="8dp"
         android:id="@+id/btnViewOnMap"
         android:fontFamily="monospace"
         app:cornerRadius="8dp"

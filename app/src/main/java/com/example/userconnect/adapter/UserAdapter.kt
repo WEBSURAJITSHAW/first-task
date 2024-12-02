@@ -8,6 +8,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.example.userconnect.R
 import com.example.userconnect.databinding.ItemUserBinding
 import com.example.userconnect.models.User
 
@@ -19,6 +21,14 @@ class UserAdapter(private val users: MutableList<User>) : RecyclerView.Adapter<U
             // Bind main data
             binding.nameTextView.text = "${user.name.title} ${user.name.first} ${user.name.last}"
             binding.emailTextView.text = user.email
+
+            // Load profile image using Glide
+            Glide.with(itemView.context)
+                .load(user.picture.medium)
+                .circleCrop()
+                .into(binding.profileImageView)
+
+
 
             // Bind extra data
             binding.tvStreet.text = "Street: ${user.location?.street?.name}"
@@ -57,7 +67,7 @@ class UserAdapter(private val users: MutableList<User>) : RecyclerView.Adapter<U
 
     override fun getItemCount(): Int = users.size
 
-    // Method to dynamically update the data
+
     @SuppressLint("NotifyDataSetChanged")
     fun updateData(newUsers: List<User>) {
         val startPosition = users.size

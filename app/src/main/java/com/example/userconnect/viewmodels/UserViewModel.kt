@@ -13,28 +13,28 @@ import kotlinx.coroutines.launch
 
 class UserViewModel : ViewModel() {
 
-    private val _userList = mutableListOf<User>() // Local cache for users
+    private val _userList = mutableListOf<User>()
     private val _userStateFlow = MutableStateFlow<List<User>>(emptyList())
     val userStateFlow: StateFlow<List<User>> = _userStateFlow
 
     private val _loadingStateFlow = MutableStateFlow(false)
     val loadingStateFlow: StateFlow<Boolean> = _loadingStateFlow
+    private var isLoading = false
 
     fun getUsers(page: Int, results: Int) {
+        if (isLoading) return // Prevent the call if loading is already in progress
+
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                isLoading = true // Set loading to true while making the request
                 _loadingStateFlow.emit(true)
 
-                Log.d("UserViewModel", "Fetching users with page=$page and results=$results")
                 val response = RetrofitClient.apiService.getUsers(page, results)
 
                 if (response.isSuccessful) {
                     response.body()?.results?.let { newUsers ->
-                        // Append new users to the existing list
-                        _userList.addAll(newUsers)
-
-                        // Emit updated list to StateFlow
-                        _userStateFlow.emit(_userList)
+                        _userList.addAll(newUsers) // Append new data
+                        _userStateFlow.emit(_userList) // Emit the updated list
                     }
                 } else {
                     Log.e("UserViewModel", "Response failed with code: ${response.code()}")
@@ -43,7 +43,9 @@ class UserViewModel : ViewModel() {
                 Log.e("UserViewModel", "Exception: ${exception.message}")
             } finally {
                 _loadingStateFlow.emit(false)
+                isLoading = false // Set loading to false after the request is finished
             }
         }
     }
+
 }

@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setUpUserRv()
+
     }
 
     private fun setUpUserRv() {
@@ -52,16 +53,26 @@ class MainActivity : AppCompatActivity() {
         observeViewModel()
         userViewModel.getUsers(currentPage, resultsPerPage)
 
-        // Add scroll listener for pagination
+         var isLoading = false // To track loading state
+
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                if (!recyclerView.canScrollVertically(1)) {
+
+                val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                // Trigger pagination only when the last item is visible and data is not being loaded
+                if (!isLoading && (visibleItemCount + firstVisibleItemPosition >= totalItemCount - 2)) {
+                    isLoading = true // Mark as loading
                     currentPage++
-                    userViewModel.getUsers(currentPage, resultsPerPage)
+                    userViewModel.getUsers(currentPage, resultsPerPage) // Fetch more users
                 }
             }
         })
+
     }
 
     private fun observeViewModel() {
@@ -78,7 +89,7 @@ class MainActivity : AppCompatActivity() {
                 if (users.isNotEmpty()) {
                     userAdapter.updateData(users)
                 } else {
-                    Toast.makeText(this@MainActivity, "No more data to load", Toast.LENGTH_SHORT).show()
+//                    Toast.makeText(this@MainActivity, "No more data to load", Toast.LENGTH_SHORT).show()
                 }
             }
         }
