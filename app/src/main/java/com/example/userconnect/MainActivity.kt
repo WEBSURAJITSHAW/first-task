@@ -40,9 +40,7 @@ class MainActivity : AppCompatActivity() {
 
         setUpUserRv()
     }
-
     private fun setUpUserRv() {
-        // Initialize RecyclerView
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         userAdapter = UserAdapter(mutableListOf())
@@ -74,28 +72,35 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadUsers() {
-        Log.d("loading data", "$currentPage")
-        isLoading = true // Mark as loading
-        userViewModel.getUsers(currentPage, resultsPerPage)
+        isLoading = true
+        userViewModel.fetchUsers()
     }
+
     private fun observeViewModel() {
         lifecycleScope.launch {
             launch {
-                userViewModel.loadingStateFlow.collect { isLoading ->
-                    progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+                userViewModel.loadingStateFlow.collect { loading ->
+                    progressBar.visibility = if (loading) View.VISIBLE else View.GONE
                 }
             }
 
             launch {
                 userViewModel.userStateFlow.collect { users ->
-                    if (users.isNotEmpty()) {
-                        userAdapter.appendData(users)
+                    if (users.size > userAdapter.itemCount) {
+                        // Only append new data
+                        val newUsers = users.subList(userAdapter.itemCount, users.size)
+                        userAdapter.appendData(newUsers)
+
+                        currentPage++ // Increment page only after successfully appending data
+                        isLoading = false // Reset loading state
                     } else {
-                        Toast.makeText(this@MainActivity, "No more users to load.", Toast.LENGTH_SHORT).show()
+                        // No more data to load
+                        hasMoreData = false
                     }
                 }
             }
         }
     }
+
 
 }
