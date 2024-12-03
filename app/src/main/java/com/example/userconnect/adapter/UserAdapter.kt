@@ -15,6 +15,14 @@ import com.example.userconnect.models.User
 
 class UserAdapter(private val users: MutableList<User>) : RecyclerView.Adapter<UserAdapter.UserViewHolder>() {
 
+    fun appendData(newUsers: List<User>) {
+        val startPosition = users.size
+        users.addAll(newUsers)
+        notifyItemRangeInserted(startPosition, newUsers.size)
+    }
+
+
+
     inner class UserViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(user: User) {
@@ -67,11 +75,4 @@ class UserAdapter(private val users: MutableList<User>) : RecyclerView.Adapter<U
 
     override fun getItemCount(): Int = users.size
 
-
-    @SuppressLint("NotifyDataSetChanged")
-    fun updateData(newUsers: List<User>) {
-        val startPosition = users.size
-        users.addAll(newUsers)
-        notifyItemRangeInserted(startPosition, newUsers.size)
-    }
 }

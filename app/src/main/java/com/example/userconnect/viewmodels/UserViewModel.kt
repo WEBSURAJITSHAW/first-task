@@ -14,38 +14,49 @@ import kotlinx.coroutines.launch
 class UserViewModel : ViewModel() {
 
     private val _userList = mutableListOf<User>()
+
     private val _userStateFlow = MutableStateFlow<List<User>>(emptyList())
     val userStateFlow: StateFlow<List<User>> = _userStateFlow
 
     private val _loadingStateFlow = MutableStateFlow(false)
     val loadingStateFlow: StateFlow<Boolean> = _loadingStateFlow
-    private var isLoading = false
 
-    fun getUsers(page: Int, results: Int) {
-        if (isLoading) return // Prevent the call if loading is already in progress
+    private var isLoading = false
+    private var hasMoreData = true
+    private var currentPage = 1
+    private val pageSize = 10
+
+    fun fetchUsers() {
+        if (isLoading || !hasMoreData) return
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                isLoading = true // Set loading to true while making the request
+                isLoading = true
                 _loadingStateFlow.emit(true)
 
-                val response = RetrofitClient.apiService.getUsers(page, results)
+                val response = RetrofitClient.apiService.getUsers(currentPage, pageSize)
 
                 if (response.isSuccessful) {
-                    response.body()?.results?.let { newUsers ->
-                        _userList.addAll(newUsers) // Append new data
-                        _userStateFlow.emit(_userList) // Emit the updated list
+                    val newUsers = response.body()?.results.orEmpty()
+
+                    if (newUsers.isNotEmpty()) {
+                        _userList.addAll(newUsers)
+                        _userStateFlow.emit(_userList)
+
+                        currentPage++ // Increment page for the next call
+                    } else {
+                        hasMoreData = false // No more data available or
+                        Log.d("UserViewModel", "No more users to fetch.")
                     }
                 } else {
-                    Log.e("UserViewModel", "Response failed with code: ${response.code()}")
+                    Log.e("UserViewModel", "API error: ${response.code()}")
                 }
             } catch (exception: Exception) {
                 Log.e("UserViewModel", "Exception: ${exception.message}")
             } finally {
                 _loadingStateFlow.emit(false)
-                isLoading = false // Set loading to false after the request is finished
+                isLoading = false // Reset loading state
             }
         }
     }
-
 }

@@ -1,6 +1,7 @@
 package com.example.userconnect
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -24,6 +25,8 @@ class MainActivity : AppCompatActivity() {
 
     private var currentPage = 1
     private val resultsPerPage = 10
+    private var isLoading = false // To track loading state
+    private var hasMoreData = true // To check if more data is available
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +39,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         setUpUserRv()
-
     }
 
     private fun setUpUserRv() {
@@ -51,9 +53,7 @@ class MainActivity : AppCompatActivity() {
         userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
 
         observeViewModel()
-        userViewModel.getUsers(currentPage, resultsPerPage)
-
-         var isLoading = false // To track loading state
+        loadUsers() // Initial load
 
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -64,34 +64,38 @@ class MainActivity : AppCompatActivity() {
                 val totalItemCount = layoutManager.itemCount
                 val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
 
-                // Trigger pagination only when the last item is visible and data is not being loaded
-                if (!isLoading && (visibleItemCount + firstVisibleItemPosition >= totalItemCount - 2)) {
-                    isLoading = true // Mark as loading
-                    currentPage++
-                    userViewModel.getUsers(currentPage, resultsPerPage) // Fetch more users
+                // Trigger pagination when nearing the end of the list
+                if (!isLoading && hasMoreData &&
+                    (visibleItemCount + firstVisibleItemPosition >= totalItemCount - 2)) {
+                    loadUsers() // Fetch more data
                 }
             }
         })
-
     }
 
+    private fun loadUsers() {
+        Log.d("loading data", "$currentPage")
+        isLoading = true // Mark as loading
+        userViewModel.getUsers(currentPage, resultsPerPage)
+    }
     private fun observeViewModel() {
         lifecycleScope.launch {
-            // Observe loading state
             launch {
                 userViewModel.loadingStateFlow.collect { isLoading ->
                     progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
                 }
             }
 
-            // Observe user data
-            userViewModel.userStateFlow.collect { users ->
-                if (users.isNotEmpty()) {
-                    userAdapter.updateData(users)
-                } else {
-//                    Toast.makeText(this@MainActivity, "No more data to load", Toast.LENGTH_SHORT).show()
+            launch {
+                userViewModel.userStateFlow.collect { users ->
+                    if (users.isNotEmpty()) {
+                        userAdapter.appendData(users)
+                    } else {
+                        Toast.makeText(this@MainActivity, "No more users to load.", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
     }
+
 }
